@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TÒPAS by TOPAZE - Gestion des ventes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Bloquer la sélection de texte pour le mode tactile */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        /* Effet d'appui tactile */
+        .tap-active:active {
+            transform: scale(0.98);
+        }
+        /* Mode Paysage strict sans scroll */
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-full flex flex-col font-sans no-select bg-slate-100">
+
+    <!-- En-tête Clair et Épuré -->
+    <header class="bg-white border-b border-slate-200 px-4 py-2 flex justify-between items-center shrink-0 shadow-xs">
+        <!-- Titre & Nombre total -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-utensils text-amber-600 text-base"></i>
+                <h1 class="font-bold text-base text-slate-800 tracking-wide uppercase">TÒPAS by TOPAZE</h1>
+            </div>
+
+            <!-- Total Général Unités -->
+            <div class="bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg flex items-center gap-2 shadow-2xs">
+                <span class="text-xs text-amber-800 font-semibold">Total Tòpas Vendu(s):</span>
+                <span id="grandTotalArticles" class="font-extrabold text-amber-700 text-base">0</span>
+            </div>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="flex items-center gap-2">
+            <!-- Copier pour Excel (Données Brutes) -->
+            <button onclick="copyRawExcel()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Copier pour Excel</span>
+            </button>
+
+            <!-- Réinitialiser -->
+            <button onclick="confirmReset()" class="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Remise à zéro</span>
+            </button>
+
+            <!-- Paramètres -->
+            <button onclick="openSettings()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 active:scale-95 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ml-1" title="Paramètres">
+                <i class="fa-solid fa-gear text-slate-600"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Zone principale à 2 colonnes (Ajustable & Adaptative) -->
+    <main class="flex-1 p-2.5 gap-3 grid grid-cols-2 overflow-hidden h-full">
+        
+        <!-- COLONNE 1 : LOS PINCHOS -->
+        <section class="bg-white border border-slate-200 rounded-xl p-2 flex flex-col h-full shadow-2xs overflow-hidden">
+            <!-- En-tête Catégorie 1 -->
+            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 shrink-0 px-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <h2 id="cat1Title" class="font-bold text-slate-800 text-sm uppercase tracking-wider truncate">LOS PINCHOS</h2>
+                </div>
+                <span id="cat1Count" class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">0 pce</span>
+            </div>
+            <!-- Liste dynamique Catégorie 1 -->
+            <div id="gridCat1" class="flex flex-col gap-1.5 flex-1 h-full overflow-y-auto pr-0.5">
+                <!-- Injecté par JS -->
+            </div>
+        </section>
+
+        <!-- COLONNE 2 : LAS CAZUELAS -->
+        <section class="bg-white border border-slate-200 rounded-xl p-2 flex flex-col h-full shadow-2xs overflow-hidden">
+            <!-- En-tête Catégorie 2 -->
+            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 shrink-0 px-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                    <h2 id="cat2Title" class="font-bold text-slate-800 text-sm uppercase tracking-wider truncate">LAS CAZUELAS</h2>
+                </div>
+                <span id="cat2Count" class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">0 pce</span>
+            </div>
+            <!-- Liste dynamique Catégorie 2 -->
+            <div id="gridCat2" class="flex flex-col gap-1.5 flex-1 h-full overflow-y-auto pr-0.5">
+                <!-- Injecté par JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Message de confirmation (Toast) -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 transition-all duration-300 transform translate-y-20 opacity-0 z-50 text-xs font-medium">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Données copiées !</span>
+    </div>
+
+    <!-- Modal confirmation Réinitialisation -->
+    <div id="resetModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border border-slate-200 rounded-xl max-w-xs w-full p-5 shadow-2xl text-center">
+            <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-rotate-left text-lg"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-sm mb-1">Remettre les compteurs à zéro ?</h3>
+            <p class="text-xs text-slate-500 mb-4">Cette action effacera tous les comptages de la journée.</p>
+            <div class="flex justify-center gap-2">
+                <button onclick="closeResetModal()" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Annuler</button>
+                <button onclick="executeReset()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs">Réinitialiser</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Paramètres -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white border border-slate-200 rounded-xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-slate-500"></i>
+                    <span>Paramètres & gestion de la carte</span>
+                </h3>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-slate-700 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 overflow-y-auto flex-1 space-y-4 text-xs">
+                
+                <!-- Noms des catégories -->
+                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="block text-slate-600 font-bold mb-1">Catégorie 1</label>
+                        <input type="text" id="cfgCat1Name" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-slate-600 font-bold mb-1">Catégorie 2</label>
+                        <input type="text" id="cfgCat2Name" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 font-medium">
+                    </div>
+                </div>
+
+                <!-- Ajouter un nouveau plat -->
+                <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-lg flex items-center gap-2">
+                    <span class="font-bold text-amber-900 text-xs shrink-0">Ajouter un Tòpas :</span>
+                    <input type="text" id="newTapasName" placeholder="Nom du plat..." class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs">
+                    <select id="newTapasCat" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium">
+                        <option value="1">Catégorie 1</option>
+                        <option value="2">Catégorie 2</option>
+                    </select>
+                    <input type="color" id="newTapasColor" value="#3b82f6" class="w-8 h-7 p-0.5 border border-slate-300 rounded cursor-pointer">
+                    <button onclick="addTapasItem()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 rounded text-xs shrink-0">
+                        <i class="fa-solid fa-plus mr-1"></i> Ajouter
+                    </button>
+                </div>
+
+                <!-- Liste des Tapas avec modification dynamique -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Liste des plats</h4>
+                    <div id="settingsTapasList" class="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
+                        <!-- Injecté en JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+                <button onclick="closeSettings()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-4 py-1.5 rounded-lg text-xs">
+                    Annuler
+                </button>
+                <button onclick="saveSettings()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition shadow-xs">
+                    Enregistrer la carte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Configuration initiale de la carte
+        const DEFAULT_CONFIG = {
+            cat1Name: "LOS PINCHOS",
+            cat2Name: "LAS CAZUELAS",
+            tapas: [
+                // PINCHOS (1 à 9)
+                { id: "p1", cat: 1, num: "01", name: "LE SUISSE", count: 0, color: "#f59e0b" },
+                { id: "p2", cat: 1, num: "02", name: "LE PIQO", count: 0, color: "#f59e0b" },
+                { id: "p3", cat: 1, num: "03", name: "LE BERGER", count: 0, color: "#f59e0b" },
+                { id: "p4", cat: 1, num: "04", name: "LE CHEF", count: 0, color: "#f59e0b" },
+                { id: "p5", cat: 1, num: "05", name: "LE DOUX", count: 0, color: "#f59e0b" },
+                { id: "p6", cat: 1, num: "06", name: "LE PÊCHEUR", count: 0, color: "#f59e0b" },
+                { id: "p7", cat: 1, num: "07", name: "LE CHALUTIER", count: 0, color: "#f59e0b" },
+                { id: "p8", cat: 1, num: "08", name: "LE SUDISTE", count: 0, color: "#f59e0b" },
+                { id: "p9", cat: 1, num: "09", name: "LE FORESTIER", count: 0, color: "#f59e0b" },
+                // CAZUELAS (1 à 9)
+                { id: "c1", cat: 2, num: "01", name: "LA SUISSESSE", count: 0, color: "#ea580c" },
+                { id: "c2", cat: 2, num: "02", name: "LA PIQO", count: 0, color: "#ea580c" },
+                { id: "c3", cat: 2, num: "03", name: "LA BERGÈRE", count: 0, color: "#ea580c" },
+                { id: "c4", cat: 2, num: "04", name: "LA CHEFFE", count: 0, color: "#ea580c" },
+                { id: "c5", cat: 2, num: "05", name: "LA DOUCE", count: 0, color: "#ea580c" },
+                { id: "c6", cat: 2, num: "06", name: "LA PÊCHEUSE", count: 0, color: "#ea580c" },
+                { id: "c7", cat: 2, num: "07", name: "LA CHALUTIÈRE", count: 0, color: "#ea580c" },
+                { id: "c8", cat: 2, num: "08", name: "LA SUDISTE", count: 0, color: "#ea580c" },
+                { id: "c9", cat: 2, num: "09", name: "LA FORESTIÈRE", count: 0, color: "#ea580c" }
+            ]
+        };
+
+        let appData = {};
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            renderApp();
+        });
+
+        function loadState() {
+            const stored = localStorage.getItem('bistro_tapas_light_v1');
+            if (stored) {
+                try {
+                    appData = JSON.parse(stored);
+                } catch(e) {
+                    appData = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                }
+            } else {
+                appData = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('bistro_tapas_light_v1', JSON.stringify(appData));
+            updateTotals();
+        }
+
+        function renderApp() {
+            document.getElementById('cat1Title').innerText = appData.cat1Name || "LOS PINCHOS";
+            document.getElementById('cat2Title').innerText = appData.cat2Name || "LAS CAZUELAS";
+
+            renderGridColumn(1, 'gridCat1');
+            renderGridColumn(2, 'gridCat2');
+
+            updateTotals();
+        }
+
+        function renderGridColumn(catNum, elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+
+            const items = appData.tapas.filter(t => t.cat === catNum);
+
+            items.forEach((item, index) => {
+                const isSelected = item.count > 0;
+                const tile = document.createElement('div');
+                
+                // Gestion de la couleur personnalisée
+                const customColor = item.color || (catNum === 1 ? '#f59e0b' : '#ea580c');
+                
+                tile.className = `border rounded-xl px-2.5 py-1 flex items-center justify-between cursor-pointer tap-active transition-all select-none flex-1 min-h-[38px] ${isSelected ? 'shadow-xs border-transparent' : 'bg-slate-50/80 border-slate-200 hover:border-slate-300'}`;
+                
+                if (isSelected) {
+                    tile.style.backgroundColor = customColor + '18'; // Fond subtil avec opacité
+                    tile.style.borderColor = customColor;
+                } else {
+                    tile.style.backgroundColor = '';
+                }
+
+                // Clic pour +1 sur toute la surface de la tuile
+                tile.onclick = (e) => {
+                    if (e.target.closest('.btn-decrement')) return;
+                    increment(item.id);
+                };
+
+                const formattedNum = String(index + 1).padStart(2, '0');
+
+                tile.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0 pr-1 flex-1">
+                        <!-- Bouton Moins (-) -->
+                        <button onclick="decrement('${item.id}')" 
+                                title="Moins 1" 
+                                class="btn-decrement w-6 h-6 rounded-lg bg-white border border-slate-300 hover:bg-rose-50 hover:text-rose-600 text-slate-500 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0 ${isSelected ? 'opacity-100' : 'opacity-25 pointer-events-none'}">
+                            <i class="fa-solid fa-minus text-[10px]"></i>
+                        </button>
+
+                        <!-- Numéro -->
+                        <span class="text-[11px] font-mono text-slate-400 font-bold shrink-0">${formattedNum}</span>
+                        
+                        <!-- Nom Tapas -->
+                        <span class="text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900' : 'text-slate-700'}">
+                            ${escapeHtml(item.name)}
+                        </span>
+                    </div>
+
+                    <!-- Badge Compteur avec couleur du plat -->
+                    <div class="shrink-0">
+                        <span class="text-xs sm:text-sm font-extrabold px-2.5 py-0.5 rounded-lg min-w-[32px] inline-block text-center transition-all ${isSelected ? 'text-white shadow-xs' : 'bg-slate-200/80 text-slate-600'}"
+                              style="${isSelected ? `background-color: ${customColor}` : ''}">
+                            ${item.count}
+                        </span>
+                    </div>
+                `;
+
+                container.appendChild(tile);
+            });
+        }
+
+        function increment(id) {
+            const item = appData.tapas.find(t => t.id === id);
+            if (item) {
+                item.count++;
+                saveState();
+                renderApp();
+            }
+        }
+
+        function decrement(id) {
+            const item = appData.tapas.find(t => t.id === id);
+            if (item && item.count > 0) {
+                item.count--;
+                saveState();
+                renderApp();
+            }
+        }
+
+        function updateTotals() {
+            let count1 = 0;
+            let count2 = 0;
+
+            appData.tapas.forEach(t => {
+                if (t.cat === 1) count1 += t.count;
+                if (t.cat === 2) count2 += t.count;
+            });
+
+            document.getElementById('cat1Count').innerText = `${count1} pce`;
+            document.getElementById('cat2Count').innerText = `${count2} pce`;
+            document.getElementById('grandTotalArticles').innerText = count1 + count2;
+        }
+
+        // Copier directement pour Excel (Format: Nom [TAB] Quantité)
+        function copyRawExcel() {
+            let rawText = "";
+
+            appData.tapas.forEach(t => {
+                rawText += `${t.name}\t${t.count}\n`;
+            });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = rawText;
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                showToast("Données copiées ! Collez directement dans Excel.");
+            } catch (err) {
+                showToast("Erreur de copie", true);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // Réinitialisation
+        function confirmReset() {
+            document.getElementById('resetModal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.add('hidden');
+        }
+
+        function executeReset() {
+            appData.tapas.forEach(t => t.count = 0);
+            saveState();
+            renderApp();
+            closeResetModal();
+            showToast("Tous les compteurs sont remis à zéro.");
+        }
+
+        // Fenêtre des Paramètres
+        function openSettings() {
+            document.getElementById('cfgCat1Name').value = appData.cat1Name || "LOS PINCHOS";
+            document.getElementById('cfgCat2Name').value = appData.cat2Name || "LAS CAZUELAS";
+
+            renderSettingsList();
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function renderSettingsList() {
+            const container = document.getElementById('settingsTapasList');
+            container.innerHTML = '';
+
+            appData.tapas.forEach((t) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200";
+
+                row.innerHTML = `
+                    <!-- Catégorie -->
+                    <select onchange="updateTapasCat('${t.id}', this.value)" class="bg-white border border-slate-300 text-slate-800 font-semibold px-1.5 py-1 rounded text-xs">
+                        <option value="1" ${t.cat === 1 ? 'selected' : ''}>Cat. 1</option>
+                        <option value="2" ${t.cat === 2 ? 'selected' : ''}>Cat. 2</option>
+                    </select>
+
+                    <!-- Nom -->
+                    <input type="text" value="${escapeHtml(t.name)}" onchange="updateTapasName('${t.id}', this.value)" class="flex-1 bg-white border border-slate-300 rounded px-2 py-1 text-slate-800 text-xs font-semibold">
+
+                    <!-- Couleur -->
+                    <input type="color" value="${t.color || '#f59e0b'}" onchange="updateTapasColor('${t.id}', this.value)" class="w-7 h-7 p-0.5 border border-slate-300 rounded cursor-pointer shrink-0" title="Changer la couleur">
+
+                    <!-- Suppression -->
+                    <button onclick="deleteTapas('${t.id}')" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition shrink-0" title="Supprimer ce plat">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function addTapasItem() {
+            const nameInput = document.getElementById('newTapasName');
+            const catInput = document.getElementById('newTapasCat');
+            const colorInput = document.getElementById('newTapasColor');
+
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            const newId = 't_' + Date.now();
+            appData.tapas.push({
+                id: newId,
+                cat: parseInt(catInput.value),
+                num: String(appData.tapas.length + 1).padStart(2, '0'),
+                name: name,
+                count: 0,
+                color: colorInput.value
+            });
+
+            nameInput.value = '';
+            renderSettingsList();
+            showToast("Nouveau plat ajouté");
+        }
+
+        function deleteTapas(id) {
+            appData.tapas = appData.tapas.filter(t => t.id !== id);
+            renderSettingsList();
+        }
+
+        function updateTapasName(id, val) {
+            const item = appData.tapas.find(t => t.id === id);
+            if (item && val.trim()) item.name = val.trim();
+        }
+
+        function updateTapasCat(id, val) {
+            const item = appData.tapas.find(t => t.id === id);
+            if (item) item.cat = parseInt(val);
+        }
+
+        function updateTapasColor(id, colorHex) {
+            const item = appData.tapas.find(t => t.id === id);
+            if (item) item.color = colorHex;
+        }
+
+        function saveSettings() {
+            appData.cat1Name = document.getElementById('cfgCat1Name').value.trim() || "LOS PINCHOS";
+            appData.cat2Name = document.getElementById('cfgCat2Name').value.trim() || "LAS CAZUELAS";
+
+            saveState();
+            renderApp();
+            closeSettings();
+            showToast("Modification enregistrées !");
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+
+            toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-rose-600' : 'bg-slate-900'} text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100 z-50 text-xs font-medium`;
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2200);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
